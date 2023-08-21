@@ -1,0 +1,143 @@
+<?xml version="1.0" encoding="utf-8"?>
+<modification>
+    <name>Customer Group Duplicate Function</name>
+    <code>add_customer_group_duplicate_function</code>
+    <version>1.0</version>
+    <author>Andy Place</author>
+
+    <file path="admin/controller/customer/customer_group.php">
+        <operation>
+            <search><![CDATA[public function delete() {]]></search>
+            <add position="before"><![CDATA[
+                public function duplicate() {
+                    $this->load->language('customer/customer_group');
+
+                    // Check if you have the necessary permission to duplicate a customer group
+                    if (!$this->user->hasPermission('modify', 'customer/customer_group')) {
+                        $this->session->data['error'] = $this->language->get('error_permission');
+                    } else {
+                        // Check if a customer group ID is provided
+                        if (isset($this->request->get['customer_group_id'])) {
+                            $customer_group_id = $this->request->get['customer_group_id'];
+
+                            // Load the customer group data to duplicate
+                            $this->load->model('customer/customer_group');
+                            $duplicate_id = $this->model_customer_customer_group->duplicateCustomerGroup($customer_group_id);
+
+                            if ($duplicate_id) {
+                                $this->session->data['success'] = ' Customer Group Duplicated. #'.$duplicate_id;//$this->language->get('text_success');
+                            } else {
+                                $this->session->data['error'] = $this->language->get('error_duplicate');
+                            }
+                        } else {
+                            $this->session->data['error'] = $this->language->get('error_customer_group');
+                        }
+                    }
+                    $this->response->redirect($this->url->link('customer/customer_group', 'user_token=' . $this->session->data['user_token'] . $url, true));
+                }
+            ]]></add>
+        </operation>
+    </file>
+
+    <file path="admin/model/customer/customer_group.php">
+        <operation>
+            <search><![CDATA[public function deleteCustomerGroup($customer_group_id) {]]></search>
+            <add position="before"><![CDATA[
+                public function duplicateCustomerGroup($customer_group_id) {
+                    $customer_group = $this->getCustomerGroup($customer_group_id);
+
+                    if( !$customer_group ) {
+                        return false;
+                    }
+
+                    unset($customer_group['customer_group_id']);
+
+                    $descriptions = $this->getCustomerGroupDescriptions($customer_group_id);
+                    $descriptions = $this->model_customer_customer_group->getCustomerGroupDescriptions($customer_group_id);
+                    foreach ($descriptions as $key => $description) {
+                        $descriptions[$key]['name'] = $description['name'].' (Copy)';
+                    }
+                    $customer_group['customer_group_description'] = $descriptions;
+
+                    $dup_id = $this->addCustomerGroup($customer_group);
+
+                    // Duplicate all entity relations
+
+                    // product_discount
+                    $query = $this->db->query("SELECT * FROM " . DB_PREFIX . "product_discount WHERE customer_group_id = '" . (int)$customer_group_id . "'");
+                    foreach( $query->rows as $row ) {
+                        $this->db->query("INSERT INTO " . DB_PREFIX . "product_discount SET customer_group_id = '" . (int)$dup_id . "', product_id = '" . (int)$row['product_id'] . "', quantity = '" . (int)$row['quantity'] . "', priority = '" . (int)$row['priority'] . "', price = '" . (float)$row['price'] . "', date_start = '" . $this->db->escape($row['date_start']) . "', date_end = '" . $this->db->escape($row['date_end']) . "'");
+                    }
+
+                    // category_discount
+                    $query = $this->db->query("SELECT * FROM " . DB_PREFIX . "category_discount WHERE customer_group_id = '" . (int)$customer_group_id . "'");
+                    foreach( $query->rows as $row ) {
+                        $this->db->query("INSERT INTO " . DB_PREFIX . "category_discount SET customer_group_id = '" . (int)$dup_id . "', category_id = '" . (int)$row['category_id'] . "', priority = '" . (int)$row['priority'] . "', percentage = '" . (int)$row['percentage'] . "', affect = '" . (float)$row['affect'] . "', qty = '" . (float)$row['qty'] . "', status = '" . (float)$row['status'] . "', date_start = '" . $this->db->escape($row['date_start']) . "', date_end = '" . $this->db->escape($row['date_end']) . "'");
+                    }
+
+                    // custom_field_customer_group
+                    $query = $this->db->query("SELECT * FROM " . DB_PREFIX . "custom_field_customer_group WHERE customer_group_id = '" . (int)$customer_group_id . "'");
+                    foreach( $query->rows as $row ) {
+                        $this->db->query("INSERT INTO " . DB_PREFIX . "custom_field_customer_group SET customer_group_id = '" . (int)$dup_id . "', custom_field_id = '" . (int)$row['custom_field_id'] . "', required = '" . (int)$row['required'] . "'");
+                    }
+
+                    // custom_field_to_customer_group
+                    $query = $this->db->query("SELECT * FROM " . DB_PREFIX . "custom_field_to_customer_group WHERE customer_group_id = '" . (int)$customer_group_id . "'");
+                    foreach( $query->rows as $row ) {
+                        $this->db->query("INSERT INTO " . DB_PREFIX . "custom_field_to_customer_group SET customer_group_id = '" . (int)$dup_id . "', custom_field_id = '" . (int)$row['custom_field_id'] . "'");
+                    }
+
+                    //oc_surefixtax_rate_to_customer_group
+                    $query = $this->db->query("SELECT * FROM " . DB_PREFIX . "tax_rate_to_customer_group WHERE customer_group_id = '" . (int)$customer_group_id . "'");
+                    foreach( $query->rows as $row ) {
+                        $this->db->query("INSERT INTO " . DB_PREFIX . "tax_rate_to_customer_group SET tax_rate_id = '" . (int)$row['tax_rate_id'] . "', customer_group_id = '" . (int)$dup_id . "'");
+                    }
+
+                    //oc_surefixtmdform_customergroup
+                    $query = $this->db->query("SELECT * FROM " . DB_PREFIX . "tmdform_customergroup WHERE customer_group_id = '" . (int)$customer_group_id . "'");
+                    foreach( $query->rows as $row ) {
+                        $this->db->query("INSERT INTO " . DB_PREFIX . "tmdform_customergroup SET form_id = '" . (int)$row['form_id'] . "', customer_group_id = '" . (int)$dup_id . "'");
+                    }
+                    return $dup_id;
+                }
+
+            ]]></add>
+        </operation>
+    </file>
+
+    <file path="admin/controller/customer/customer_group.php">
+        <operation>
+            <search><![CDATA[
+                'edit'              => $this->url->link('customer/customer_group/edit', 'user_token=' . $this->session->data['user_token'] . '&customer_group_id=' . $result['customer_group_id'] . $url, true)
+            ]]></search>
+            <add position="before"><![CDATA[
+                'duplicate' => $this->url->link('customer/customer_group/duplicate', 'user_token=' . $this->session->data['user_token'] . '&customer_group_id=' . $result['customer_group_id'], true),
+            ]]></add>
+        </operation>
+    </file>
+
+    <file path="admin/view/template/customer/customer_group_list.twig">
+        <operation>
+            <search><![CDATA[
+                <td class="text-right"><a href="{{ customer_group.edit }}" data-toggle="tooltip" title="{{ button_edit }}" class="btn btn-primary"><i class="fa fa-pencil"></i></a></td>
+            ]]></search>
+            <add position="replace"><![CDATA[
+                <td class="text-right">
+                    <a href="{{ customer_group.edit }}" data-toggle="tooltip" title="{{ button_edit }}" class="btn btn-primary"><i class="fa fa-pencil"></i></a>
+                    <a href="{{ customer_group.duplicate }}" data-toggle="tooltip" title="{{ button_duplicate }}" class="btn btn-info"><i class="fa fa-copy"></i></a>
+                </td>
+            ]]></add>
+        </operation>
+    </file>
+
+    <file path="admin/language/en-gb/customer/customer_group.php">
+        <operation>
+            <search><![CDATA[
+                $_['text_edit']         = 'Edit Customer Group';
+            ]]></search>
+            <add position="after"><![CDATA[
+                $_['button_duplicate']  = 'Duplicate';
+            ]]></add>
+        </operation>
+    </file>
+</modification>
