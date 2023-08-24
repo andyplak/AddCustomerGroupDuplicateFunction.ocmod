@@ -87,16 +87,28 @@
                         $this->db->query("INSERT INTO " . DB_PREFIX . "custom_field_to_customer_group SET customer_group_id = '" . (int)$dup_id . "', custom_field_id = '" . (int)$row['custom_field_id'] . "'");
                     }
 
-                    //oc_surefixtax_rate_to_customer_group
+                    // tax_rate_to_customer_group
                     $query = $this->db->query("SELECT * FROM " . DB_PREFIX . "tax_rate_to_customer_group WHERE customer_group_id = '" . (int)$customer_group_id . "'");
                     foreach( $query->rows as $row ) {
                         $this->db->query("INSERT INTO " . DB_PREFIX . "tax_rate_to_customer_group SET tax_rate_id = '" . (int)$row['tax_rate_id'] . "', customer_group_id = '" . (int)$dup_id . "'");
                     }
 
-                    //oc_surefixtmdform_customergroup
+                    // tmdform_customergroup
                     $query = $this->db->query("SELECT * FROM " . DB_PREFIX . "tmdform_customergroup WHERE customer_group_id = '" . (int)$customer_group_id . "'");
                     foreach( $query->rows as $row ) {
                         $this->db->query("INSERT INTO " . DB_PREFIX . "tmdform_customergroup SET form_id = '" . (int)$row['form_id'] . "', customer_group_id = '" . (int)$dup_id . "'");
+                    }
+
+                    // mulflatshp
+                    $query = $this->db->query("SELECT * FROM " . DB_PREFIX . "mulflatshp");
+                    foreach( $query->rows as $row ) {
+                        $cust_groups = explode(',', $row['customer_group']);
+
+                        if( in_array($customer_group_id, $cust_groups) ) {
+                            $cust_groups[] = $dup_id;
+                            var_dump("UPDATE " . DB_PREFIX . "mulflatshp SET customer_group = '" . implode(',', $cust_groups) . "' WHERE mulflatshp_id = '" . (int)$row['mulflatshp_id'] . "'");
+                            $this->db->query("UPDATE " . DB_PREFIX . "mulflatshp SET customer_group = '" . implode(',', $cust_groups) . "' WHERE mulflatshp_id = '" . (int)$row['mulflatshp_id'] . "'");
+                        }
                     }
                     return $dup_id;
                 }
