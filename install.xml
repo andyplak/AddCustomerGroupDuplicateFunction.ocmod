@@ -4,6 +4,7 @@
     <code>add_customer_group_duplicate_function</code>
     <version>1.1</version>
     <author>Andy Place</author>
+    <link>https://github.com/andyplak/AddCustomerGroupDuplicateFunction.ocmod</link>
 
     <file path="admin/controller/customer/customer_group.php">
         <operation>
