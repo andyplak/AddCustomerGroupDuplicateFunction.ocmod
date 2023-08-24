@@ -106,7 +106,6 @@
 
                         if( in_array($customer_group_id, $cust_groups) ) {
                             $cust_groups[] = $dup_id;
-                            var_dump("UPDATE " . DB_PREFIX . "mulflatshp SET customer_group = '" . implode(',', $cust_groups) . "' WHERE mulflatshp_id = '" . (int)$row['mulflatshp_id'] . "'");
                             $this->db->query("UPDATE " . DB_PREFIX . "mulflatshp SET customer_group = '" . implode(',', $cust_groups) . "' WHERE mulflatshp_id = '" . (int)$row['mulflatshp_id'] . "'");
                         }
                     }
