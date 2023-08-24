@@ -2,7 +2,7 @@
 <modification>
     <name>Customer Group Duplicate Function</name>
     <code>add_customer_group_duplicate_function</code>
-    <version>1.0</version>
+    <version>1.1</version>
     <author>Andy Place</author>
 
     <file path="admin/controller/customer/customer_group.php">
