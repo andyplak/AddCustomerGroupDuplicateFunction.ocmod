@@ -73,7 +73,7 @@
                     // category_discount
                     $query = $this->db->query("SELECT * FROM " . DB_PREFIX . "category_discount WHERE customer_group_id = '" . (int)$customer_group_id . "'");
                     foreach( $query->rows as $row ) {
-                        $this->db->query("INSERT INTO " . DB_PREFIX . "category_discount SET customer_group_id = '" . (int)$dup_id . "', category_id = '" . (int)$row['category_id'] . "', priority = '" . (int)$row['priority'] . "', percentage = '" . (int)$row['percentage'] . "', affect = '" . (float)$row['affect'] . "', qty = '" . (float)$row['qty'] . "', status = '" . (float)$row['status'] . "', date_start = '" . $this->db->escape($row['date_start']) . "', date_end = '" . $this->db->escape($row['date_end']) . "'");
+                        $this->db->query("INSERT INTO " . DB_PREFIX . "category_discount SET customer_group_id = '" . (int)$dup_id . "', category_id = '" . (int)$row['category_id'] . "', priority = '" . (int)$row['priority'] . "', percentage = '" . (float)$row['percentage'] . "', affect = '" . (float)$row['affect'] . "', qty = '" . (float)$row['qty'] . "', status = '" . (float)$row['status'] . "', date_start = '" . $this->db->escape($row['date_start']) . "', date_end = '" . $this->db->escape($row['date_end']) . "'");
                     }
 
                     // custom_field_customer_group
